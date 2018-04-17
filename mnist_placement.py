@@ -10,7 +10,7 @@
 # distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
-# limitations under the License.
+#limitations under the License.
 # ==============================================================================
 """A simple MNIST classifier which displays summaries in TensorBoard.
 
@@ -47,7 +47,7 @@ def mnist_model():
     Graph = tf.Graph()
     global merged, accuracy, train_step
     global x, y_, keep_prob
-    with Graph.as_default():  
+    with Graph.as_default():
       #tf.reset_default_graph()
       with tf.name_scope('input'):
         x = tf.placeholder(tf.float32, [None, 784], name='x-input')
@@ -145,7 +145,7 @@ def mnist_model():
       # /tmp/tensorflow/mnist/logs/mnist_with_summaries (by default)
       merged = tf.summary.merge_all()
       global init_op
-      init_op = tf.global_variables_initializer() 
+      init_op = tf.global_variables_initializer()
       # Train the model, and also write summaries.
       # Every 10th step, measure test-set accuracy, and write test summaries
       # All other steps, run train_step on training data, & add training summaries

@@ -19,11 +19,11 @@ def seq2seq_model(params):
     number_of_placement = params['number_of_placement']
     number_of_clusters = params['number_of_clusters']
     G = tf.Graph()
-    with G.as_default():     
+    with G.as_default():
         # Tensor where we will feed the data into graph
         inputs = tf.placeholder(tf.float32, (None, number_of_clusters,embed_size), 'inputs')
 
-        # Embedding layers
+        #Embedding layers
         output_embedding = tf.Variable(tf.random_uniform([params['vocab_size'], params['embed_size']], -1.0, 1.0), dtype=tf.float32)
         with tf.variable_scope("encoding") as encoding_scope:
             lstm_enc = tf.nn.rnn_cell.LSTMCell(num_units=num_units)
@@ -35,7 +35,7 @@ def seq2seq_model(params):
                 num_units=num_units, memory=encoder_outputs,
                 #this would mask the rest of the memory content to zero if length is not maximum
                 # not valid in our case we have the fix number of clusters
-                # maybe if nuber of clusters changes can cannot be dynamic we need to fix this 
+                # maybe if nuber of clusters changes can cannot be dynamic we need to fix this
                 #I have no idea what it does.
                 ####memory_sequence_length=input_lengths####
                 )
@@ -46,7 +46,7 @@ def seq2seq_model(params):
                     #initial_state=encoder_final_state)
                 outputs = tf.contrib.seq2seq.dynamic_decode(decoder=decoder, output_time_major=False, impute_finished=True, maximum_iterations=number_of_placement)
                 return outputs[0]
-            
+
         with tf.variable_scope("decoding") as decoding_scope:
             start_tokens = tf.zeros([batch_size], dtype=tf.int64)
             pred_helper = tf.contrib.seq2seq.GreedyEmbeddingHelper(
@@ -54,9 +54,9 @@ def seq2seq_model(params):
             pred_outputs = decode(helper=pred_helper,scope="decoding", encoder_outputs=encoder_outputs,encoder_final_state=encoder_final_state,reuse=False)
             #mn.apply_placement()
             #mn.train()
-        #connect outputs to 
+        #connect outputs to
         with tf.name_scope("optimization"):
-            
+
             # Loss function
             acc_prob_under_policy = tf.reduce_sum(pred_outputs.rnn_output,[0,1])
             prob_under_policy = tf.reduce_mean (acc_prob_under_policy)
@@ -65,18 +65,18 @@ def seq2seq_model(params):
             #loss = tf.contrib.seq2seq.sequence_loss(logits, targets, tf.ones([batch_size, y_seq_length]))
             # Optimizer
             optimizer = tf.train.AdamOptimizer().minimize(loss)
-            #lstm_dec = tf.contrib.rnn.LSTMCell(nodes)    
+            #lstm_dec = tf.contrib.rnn.LSTMCell(nodes)
             with tf.control_dependencies([optimizer]):
                 dummy = tf.constant(0)
 
             #dec_outputs, _ = tf.nn.dynamic_rnn(lstm_dec, inputs=date_output_embed, initial_state=last_state)
-        init_op = tf.global_variables_initializer()    
+        init_op = tf.global_variables_initializer()
 
-        saver = tf.train.Saver()        
-    return G,init_op,loss,dummy, pred_outputs,inputs,saver,reward 
+        saver = tf.train.Saver()
+    return G,init_op,loss,dummy, pred_outputs,inputs,saver,reward
 
 def train_seq2seq(Graph,init_op,params,loss,dummy, pred_outputs,inputs,vocab,saver,reward):
-    
+
         sess = tf.Session(graph=Graph)
         sess.run(init_op)
         """
@@ -86,7 +86,7 @@ def train_seq2seq(Graph,init_op,params,loss,dummy, pred_outputs,inputs,vocab,sav
             sess.run(init_op)
         #exit()
         """
-        
+
         for epoch_i in range(params['epochs']):
             h = sess.partial_run_setup([pred_outputs.sample_id,loss,dummy],[inputs,reward])
             start_time = time.time()
@@ -102,16 +102,16 @@ def train_seq2seq(Graph,init_op,params,loss,dummy, pred_outputs,inputs,vocab,sav
 
             #mn.apply_placement()
             #mn.train()
-            
+
             #accuracy = np.mean(batch_logits.argmax(axis=-1) == target_batch[:,1:])
             #print('Epoch {:3} Loss: {:>6.3f} Epoch duration: {:>6.3f}s'.format(epoch_i, batch_loss,time.time() - start_time))
         #save_path = saver.save(sess, "./checkpoint/model.ckpt")
         #print("Model saved in path: %s" % save_path)
         #sess.close()
-            
-            
-            
-        
+
+
+
+
         #mn.train()
 
 def batch_data(params):
@@ -128,9 +128,9 @@ def get_formatter(keys, vocab):
         res.append(" "+rev_vocab[key])
     return res
 
-  
+
 def main():
-    vocab_filename = "vocab"   
+    vocab_filename = "vocab"
     vocab = load_vocab(vocab_filename)
     params = {
         'vocab_size': len(vocab),
@@ -146,7 +146,7 @@ def main():
     Graph,init_op,loss,dummy, pred_outputs,inputs,saver,reward  = seq2seq_model(params)
 
     train_seq2seq(Graph,init_op,params,loss,dummy, pred_outputs,inputs,vocab ,saver,reward)
-    
+
 
 
 if __name__ == "__main__":
