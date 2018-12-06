@@ -3,7 +3,6 @@ import tensorflow as tf
 import time
 import mnist_placement as mn
 
-
 def load_vocab(filename):
     vocab = {}
     with open(filename) as f:
@@ -61,18 +60,18 @@ def seq2seq_model(params):
             acc_prob_under_policy = tf.reduce_sum(pred_outputs.rnn_output,[0,1])
             prob_under_policy = tf.reduce_mean (acc_prob_under_policy)
             reward = tf.placeholder(tf.float32,(None),'reward')
-            loss = prob_under_policy * reward# * tf.log(prob_under_policy + 1e-13)
+            loss = prob_under_policy * reward # * tf.log(prob_under_policy + 1e-13)
             #loss = tf.contrib.seq2seq.sequence_loss(logits, targets, tf.ones([batch_size, y_seq_length]))
             # Optimizer
             optimizer = tf.train.AdamOptimizer().minimize(loss)
             #lstm_dec = tf.contrib.rnn.LSTMCell(nodes)
             with tf.control_dependencies([optimizer]):
                 dummy = tf.constant(0)
-
             #dec_outputs, _ = tf.nn.dynamic_rnn(lstm_dec, inputs=date_output_embed, initial_state=last_state)
+        
         init_op = tf.global_variables_initializer()
-
         saver = tf.train.Saver()
+
     return G,init_op,loss,dummy, pred_outputs,inputs,saver,reward
 
 def train_seq2seq(Graph,init_op,params,loss,dummy, pred_outputs,inputs,vocab,saver,reward):
@@ -89,37 +88,32 @@ def train_seq2seq(Graph,init_op,params,loss,dummy, pred_outputs,inputs,vocab,sav
 
         for epoch_i in range(params['epochs']):
             h = sess.partial_run_setup([pred_outputs.sample_id,loss,dummy],[inputs,reward])
-            start_time = time.time()
+            #start_time = time.time()
             source_batch =  batch_data(params)
             #loss tf.get_default_graph().get_tensor_by_name("loss")
             T_P = sess.partial_run(h,pred_outputs.sample_id,feed_dict = {inputs: source_batch})
             print (get_formatter(T_P[0],vocab))
             mn.apply_placement()
             runtime = mn.train()
+            print(runtime)
             batch_loss,d = sess.partial_run(h,[loss,dummy],feed_dict = {reward: runtime})
             #sess.partial_run(h,dummy)
             #op, batch_loss, T_P = sess.run([optimizer, loss, pred_outputs.sample_id],feed_dict = {inputs: source_batch})
-
             #mn.apply_placement()
             #mn.train()
-
             #accuracy = np.mean(batch_logits.argmax(axis=-1) == target_batch[:,1:])
             #print('Epoch {:3} Loss: {:>6.3f} Epoch duration: {:>6.3f}s'.format(epoch_i, batch_loss,time.time() - start_time))
         #save_path = saver.save(sess, "./checkpoint/model.ckpt")
         #print("Model saved in path: %s" % save_path)
         #sess.close()
-
-
-
-
         #mn.train()
 
 def batch_data(params):
     input_embed = np.random.randn(params['batch_size'], params['number_of_clusters'], params['embed_size'])
     return input_embed
+
 def get_rev_vocab(vocab):
     return {idx: key for key, idx in vocab.items()}
-
 
 def get_formatter(keys, vocab):
     rev_vocab = get_rev_vocab(vocab)
@@ -127,7 +121,6 @@ def get_formatter(keys, vocab):
     for key in keys:
         res.append(" "+rev_vocab[key])
     return res
-
 
 def main():
     vocab_filename = "vocab"
@@ -139,15 +132,12 @@ def main():
         'number_of_placement': 30,
         'embed_size': 100,
         'num_units': 256,
-        'epochs': 2
+        'epochs': 20
     }
     mn.initilaze()
     mn.make_seesion()
     Graph,init_op,loss,dummy, pred_outputs,inputs,saver,reward  = seq2seq_model(params)
-
     train_seq2seq(Graph,init_op,params,loss,dummy, pred_outputs,inputs,vocab ,saver,reward)
-
-
 
 if __name__ == "__main__":
     main()
